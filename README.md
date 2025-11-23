@@ -69,3 +69,12 @@ The application uses a base mapping system:
 - Canada: 0.95
 
 Scores are normalized to the base and then converted to the target country.
+
+---
+## GitHub Repository
+You can view the full source code here:  
+https://github.com/JoRobert137/global-wealth-id.git
+
+## Live Demo Link :
+
+https://gwid-app.delightfulglacier-ac7cdb6a.eastus.azurecontainerapps.io/

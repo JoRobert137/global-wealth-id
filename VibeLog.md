@@ -92,20 +92,49 @@ This served as the foundation of the entire project.
 
 ---
 
-# 2️⃣ Bug Encounter #1 — Duplicate Server File
+# 2️⃣ Bug Encounter #1 — Dockerfile Misconfiguration
 
 ### **Issue Identified**
-After generation, Cline unintentionally created a **server.js** at the project root.  
-This conflicted with the actual backend entry point:  
-`/backend/src/index.ts`.
-
----
+After generation, the Dockerfile had a mistake in the frontend build stage.
+Cline placed the frontend build output in the wrong directory inside the backend runtime stage, causing the container to serve only the backend API instead of the full React app + API. Specifically:
+- The dist folder from Vite was copied incorrectly.
+- The backend was listening on the wrong port.
+- The final image didn’t properly serve the React static files.
 
 ### **My Prompt**
-```md
-Cline, I see a server.js at project root AND a TypeScript backend inside /backend/src/index.ts.
-This is wrong. Remove the root server.js and confirm the correct backend entry is backend/dist/index.js after build.
 ```
+Cline, the Dockerfile is incorrect. 
+The frontend build is not being copied to the right place, and the backend is serving only the API. 
+Fix the Dockerfile so that:
+1. The React build goes into backend/dist/public
+2. The container exposes port 3000
+3. The command runs: node dist/index.js
+4. The backend correctly serves the built frontend.
+```
+
+### AI Output Summary
+- Acknowledged the Dockerfile misconfiguration
+- Explained why the frontend wasn’t appearing in the container
+- Rewrote the full Dockerfile with correct 3-stage build:
+  - Stage 1: Frontend build
+  - Stage 2: Backend TypeScript build
+  - Stage 3: Final runtime (serving React + API)
+- Ensured the frontend files are placed in:
+`backend/dist/public/`
+- Confirmed correct runtime command:
+`CMD ["node", "dist/index.js"]`
+---
+
+## Screenshots & Video Demo
+
+### Intial Prompt
+![Intial Prompt](<Screenshot 2025-11-23 213633.png>) 
+
+### Debug Prompt
+![Debug Prompt](<Screenshot 2025-11-23 213435.png>)
+
+### Vibe Log Video
+https://drive.google.com/file/d/1MSPGQF1cCjgpl8r6JMzb92kW4eLzWo-D/view?usp=sharing
 
 ---
 
@@ -128,3 +157,11 @@ CMD ["node", "backend/dist/index.js"]
 ✔ Single, correct entry point
 
 ✔ No runtime conflicts
+
+## GitHub Repository
+You can view the full source code here:  
+https://github.com/JoRobert137/global-wealth-id.git
+
+## Live Demo Link :
+
+https://gwid-app.delightfulglacier-ac7cdb6a.eastus.azurecontainerapps.io/
