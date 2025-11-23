@@ -1,0 +1,19 @@
+# Root ignore
+node_modules/
+dist/
+.env
+*.log
+
+# Ignore Docker
+docker-debug.log
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore editor files
+.vscode/
+.idea/
+
+# Ignore TypeScript build artifacts
+*.tsbuildinfo

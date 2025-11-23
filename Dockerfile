@@ -7,6 +7,7 @@ WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
 COPY frontend/tsconfig.json ./
+COPY frontend/tsconfig.node.json ./
 COPY frontend/vite.config.ts ./
 COPY frontend/src ./src
 COPY frontend/index.html ./

@@ -16,7 +16,7 @@ interface ConversionFormData {
 }
 
 const COUNTRIES = ['US', 'UK', 'India', 'Canada'];
-const BACKEND_URL = 'http://localhost:3001';
+const BACKEND_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin;
 
 function App() {
   const [formData, setFormData] = useState<ConversionFormData>({
@@ -365,13 +365,15 @@ const styles: Record<string, React.CSSProperties> = {
 };
 
 // Media query for mobile responsiveness
-const mediaQuery = window.matchMedia('(max-width: 768px)');
-if (mediaQuery.matches) {
-  styles.main = {
-    ...styles.main,
-    gridTemplateColumns: '1fr',
-    gap: '20px'
-  };
+if (typeof window !== 'undefined') {
+  const mediaQuery = window.matchMedia('(max-width: 768px)');
+  if (mediaQuery.matches) {
+    styles.main = {
+      ...styles.main,
+      gridTemplateColumns: '1fr',
+      gap: '20px'
+    };
+  }
 }
 
 export default App;

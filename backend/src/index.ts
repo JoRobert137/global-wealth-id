@@ -1,8 +1,9 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import path from 'path';
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3000; // one server for frontend + backend
 
 // Middleware
 app.use(cors());
@@ -18,10 +19,8 @@ interface ConversionRecord {
   convertedScore: number;
 }
 
-// In-memory storage for conversions (last 10)
 const conversionHistory: ConversionRecord[] = [];
 
-// Country base mapping for conversion logic
 const countryBaseRates: Record<string, number> = {
   US: 1.0,
   UK: 0.9,
@@ -31,59 +30,47 @@ const countryBaseRates: Record<string, number> = {
 
 const validCountries = Object.keys(countryBaseRates);
 
-// Generate unique ID
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Convert credit score between countries
 function convertScore(countryFrom: string, countryTo: string, score: number): number {
-  // Normalize score to base (US as reference)
   const normalizedScore = score / countryBaseRates[countryFrom];
-  // Convert to target country
   const convertedScore = normalizedScore * countryBaseRates[countryTo];
-  return Math.round(convertedScore * 100) / 100; // Round to 2 decimal places
+  return Math.round(convertedScore * 100) / 100;
 }
 
-// Health check endpoint
+// ✅ Serve frontend (Docker places files in dist/public)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Health check
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// POST /api/convert - Convert credit score between countries
+// Convert API
 app.post('/api/convert', (req: Request, res: Response) => {
   try {
     const { countryFrom, countryTo, score } = req.body;
 
-    // Validation
     if (!countryFrom || !countryTo || typeof score !== 'number') {
-      return res.status(400).json({
-        error: 'Missing required fields: countryFrom, countryTo, score'
-      });
+      return res.status(400).json({ error: 'Missing required fields: countryFrom, countryTo, score' });
     }
 
     if (!validCountries.includes(countryFrom)) {
-      return res.status(400).json({
-        error: `Invalid countryFrom. Must be one of: ${validCountries.join(', ')}`
-      });
+      return res.status(400).json({ error: `Invalid countryFrom. Must be one of: ${validCountries.join(', ')}` });
     }
 
     if (!validCountries.includes(countryTo)) {
-      return res.status(400).json({
-        error: `Invalid countryTo. Must be one of: ${validCountries.join(', ')}`
-      });
+      return res.status(400).json({ error: `Invalid countryTo. Must be one of: ${validCountries.join(', ')}` });
     }
 
     if (score < 0 || score > 1000) {
-      return res.status(400).json({
-        error: 'Score must be between 0 and 1000'
-      });
+      return res.status(400).json({ error: 'Score must be between 0 and 1000' });
     }
 
-    // Perform conversion
     const convertedScore = convertScore(countryFrom, countryTo, score);
 
-    // Create conversion record
     const conversion: ConversionRecord = {
       id: generateId(),
       timestamp: new Date().toISOString(),
@@ -93,11 +80,8 @@ app.post('/api/convert', (req: Request, res: Response) => {
       convertedScore
     };
 
-    // Add to history (keep only last 10)
     conversionHistory.push(conversion);
-    if (conversionHistory.length > 10) {
-      conversionHistory.shift(); // Remove oldest record
-    }
+    if (conversionHistory.length > 10) conversionHistory.shift();
 
     res.status(201).json(conversion);
   } catch (error) {
@@ -106,10 +90,9 @@ app.post('/api/convert', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/history - Get conversion history
+// History API
 app.get('/api/history', (req: Request, res: Response) => {
   try {
-    // Return last 10 conversions (most recent first)
     const recentHistory = conversionHistory.slice(-10).reverse();
     res.json(recentHistory);
   } catch (error) {
@@ -118,15 +101,20 @@ app.get('/api/history', (req: Request, res: Response) => {
   }
 });
 
-// 404 handler
-app.use('*', (req: Request, res: Response) => {
-  res.status(404).json({ error: 'Endpoint not found' });
+// SPA fallback — serve index.html
+app.get('*', (req: Request, res: Response) => {
+  if (req.path.startsWith('/api') || req.path === '/health') {
+    return res.status(404).json({ error: 'Endpoint not found' });
+  }
+
+  res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Global Wealth ID Backend running on http://localhost:${PORT}`);
+  console.log(`🚀 Global Wealth ID (Frontend + Backend) running on http://localhost:${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/health`);
   console.log(`🔄 Convert API: http://localhost:${PORT}/api/convert`);
   console.log(`📜 History API: http://localhost:${PORT}/api/history`);
+  console.log(`🌍 Frontend: http://localhost:${PORT}/`);
 });
